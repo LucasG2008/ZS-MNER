@@ -1,0 +1,5 @@
+{
+    "ger_rom_model": ["af", "de", "en", "es", "fr", "it", "nl", "pt"],
+    "var_model": ["en", "es", "ar", "zh", "ru", "hi", "sw", "tr", "ja", "fr", "ms", "ko"],
+    "en_model": ["en"]
+}
