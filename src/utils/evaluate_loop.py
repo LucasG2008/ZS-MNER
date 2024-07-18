@@ -42,4 +42,4 @@ def evaluate_loop(model, tokenizer, df_test):
         pbar.update(1)
 
     val_accuracy = total_acc_test / len(df_test)
-    print(f'Test Accuracy: {val_accuracy: .3f}')
+    return val_accuracy

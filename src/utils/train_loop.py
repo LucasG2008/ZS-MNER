@@ -3,28 +3,14 @@ from torch.optim import SGD, AdamW
 from torch.utils.data import DataLoader
 from data.data_sequence import DataSequence
 
+import sys
 import copy
+from time import time
 from tqdm import tqdm
 
 def train_loop(model, tokenizer, df_train, df_val, model_parameters):
-    """
-    Trains a model using the given dataset and model parameters.
-    
-    Args:
-        model (torch.nn.Module): The model to be trained.
-        tokenizer (transformers.PreTrainedTokenizer): The tokenizer used to preprocess the data.
-        df_train (pandas.DataFrame): The training dataset.
-        df_val (pandas.DataFrame): The validation dataset.
-        model_parameters (dict): The parameters for the model training.
-            - learning_rate (float): The learning rate for the optimizer.
-            - epochs (int): The number of epochs to train the model.
-            - batch_size (int): The batch size for training.
-    
-    Returns:
-        tuple: A tuple containing the trained model and the best model weights.
-            - model (torch.nn.Module): The trained model.
-            - best_model_weights (dict): The weights of the best model during training.
-    """
+
+    start_time = time()
 
     LEARNING_RATE = model_parameters['learning_rate']
     EPOCHS = model_parameters['epochs']
@@ -97,6 +83,9 @@ def train_loop(model, tokenizer, df_train, df_val, model_parameters):
 
             pbar.update(BATCH_SIZE)
 
+        pbar.close()
+        sys.stdout.flush()
+
         model.eval()
 
         total_acc_val = 0
@@ -129,10 +118,13 @@ def train_loop(model, tokenizer, df_train, df_val, model_parameters):
 
                 pbar.update(BATCH_SIZE)
 
+        pbar.close()
+        sys.stdout.flush()
+
         val_accuracy = total_acc_val / len(df_val)
         val_loss = total_loss_val / len(df_val)
 
-        print(
+        tqdm.write(
             f'Epochs: {epoch_num+1} \
             | Loss: {total_loss_train / len(df_train): .3f} \
             | Accuracy: {total_acc_train / len(df_train): .3f} \
@@ -150,6 +142,9 @@ def train_loop(model, tokenizer, df_train, df_val, model_parameters):
             if patience == 0:
                 print('Early Stopping Triggered')
                 break
+
+    end_time = time()
+    training_time = end_time - start_time
     
     train_acc_history = [tensor.item() if isinstance(tensor, torch.Tensor) else tensor for tensor in train_acc_history]
     train_loss_history = [tensor.item() if isinstance(tensor, torch.Tensor) else tensor for tensor in train_loss_history]
@@ -158,8 +153,9 @@ def train_loop(model, tokenizer, df_train, df_val, model_parameters):
     val_loss_history = [tensor.item() if isinstance(tensor, torch.Tensor) else tensor for tensor in val_loss_history]
 
     plot_acc_loss(train_acc_history, val_acc_history, train_loss_history, val_loss_history)
+    plt.show()
 
-    return model, best_model_weights
+    return model, best_model_weights, training_time
 
 #--------------------------------------------------------------------------------------------------------------#
 
