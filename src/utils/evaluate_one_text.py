@@ -3,14 +3,12 @@ from nltk.tokenize import word_tokenize
 
 def evaluate_one_text(model, tokenizer, sentence, ids_to_labels):
     use_cuda = torch.cuda.is_available()
-    use_mps = torch.backends.mps.is_available()
-    
-    device = torch.device("mps" if use_mps else "cpu")
+    device = torch.device("cuda" if use_cuda else "cpu")
 
-    if use_mps:
-        model.to(device)
-    elif use_cuda:
+    if use_cuda:
         model = model.cuda()
+    elif use_cuda:
+        model.to(device)
 
     print(f"Running on: {device}")
 

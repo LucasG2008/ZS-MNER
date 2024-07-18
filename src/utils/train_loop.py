@@ -37,18 +37,15 @@ def train_loop(model, tokenizer, df_train, df_val, model_parameters):
     val_dataloader = DataLoader(val_dataset, num_workers=0, batch_size=BATCH_SIZE)
 
     use_cuda = torch.cuda.is_available()
-    use_mps = torch.backends.mps.is_available()
-
-    use_mps = False
     
-    device = torch.device("mps" if use_mps else "cpu")
+    device = torch.device("cuda" if use_cuda else "cpu")
 
     optimizer = SGD(model.parameters(), lr=LEARNING_RATE)
 
-    if use_mps:
-        model.to(device)
-    elif use_cuda:
+    if use_cuda:
         model = model.cuda()
+    elif use_cuda:
+        model.to(device)
 
     print(f"Running on: {device}")
 

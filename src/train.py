@@ -9,8 +9,8 @@ from config.labels import unique_labels
 
 # Load PAN-X NER data
 print("Loading data...")
-languages = ["en", "es"]
-dataloader = PANX_dataloader(langs=languages, nrows=100)
+languages = ["en", "es", "ar", "zh", "ru", "hi", "sw", "tr", "ja", "fr", "ms", "ko"]
+dataloader = PANX_dataloader(langs=languages, nrows=40000)
 df_train, df_val, df_test = dataloader.load_training_data()
 
 # Load tokenizer
@@ -37,5 +37,5 @@ end = time.time()
 print(f"Training took {end - start} seconds")
 
 # Save weight
-#model_path = 'src/models/pretrained/en_es_model.pth'
-#torch.save(best_model_weights, model_path)
+model_path = 'src/models/pretrained/var_model.pth'
+torch.save(best_model_weights, model_path)

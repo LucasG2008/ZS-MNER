@@ -2,6 +2,9 @@ from collections import defaultdict
 from datasets import DatasetDict
 from datasets import load_dataset
 
+from datasets.utils.logging import set_verbosity_error
+set_verbosity_error()
+
 from tqdm import tqdm
 
 import numpy as np
@@ -79,7 +82,11 @@ class PANX_dataloader:
             
             complete_lang_df = pd.concat([train_df, val_df, test_df], ignore_index=True)
             complete_lang_df['lang'] = lang
-            lang_dataframes.append(complete_lang_df.sample(n=self.nrows, random_state=42))
+
+            if self.nrows > len(complete_lang_df):
+                lang_dataframes.append(complete_lang_df)
+            else:
+                lang_dataframes.append(complete_lang_df.sample(n=self.nrows, random_state=42))
 
             pbar.update(1)
 
