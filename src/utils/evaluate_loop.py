@@ -1,8 +1,10 @@
 import torch
 from torch.utils.data import DataLoader
-from data.data_sequence import DataSequence
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
 from tqdm import tqdm
+
+from src.data.data_sequence import DataSequence
 
 def evaluate_loop(model, tokenizer, df_test):
     test_dataset = DataSequence(df_test, tokenizer)
@@ -17,9 +19,11 @@ def evaluate_loop(model, tokenizer, df_test):
         model.to(device)
     print(f"Running on: {device}")
 
-    total_acc_test = 0.0
+    all_preds = []
+    all_labels = []
 
     pbar = tqdm(total=len(df_test), desc=f"[Test Accuracy: {0}]")
+    
     for idx, batch_data in enumerate(test_dataloader):
         test_data, test_label = batch_data
         test_label = test_label.to(device)
@@ -34,12 +38,24 @@ def evaluate_loop(model, tokenizer, df_test):
             label_clean = test_label[i][test_label[i] != -100]
 
             predictions = logits_clean.argmax(dim=1)
-            acc = (predictions == label_clean).float().mean()
-            total_acc_test += acc
 
-        pbar.set_description(f"[Test Accuracy: {(total_acc_test / ((idx + 1))):.3f}]")
+            all_preds.extend(predictions.cpu().numpy())
+            all_labels.extend(label_clean.cpu().numpy())
 
+        # Calculate batch accuracy for display in the progress bar
+        acc = (predictions == label_clean).float().mean().item()
+        pbar.set_description(f"[Test Accuracy: {acc:.3f}]")
         pbar.update(1)
 
-    val_accuracy = total_acc_test / len(df_test)
-    return val_accuracy
+    # Compute metrics
+    val_accuracy = accuracy_score(all_labels, all_preds)
+    val_precision = precision_score(all_labels, all_preds, average='weighted')
+    val_recall = recall_score(all_labels, all_preds, average='weighted')
+    val_f1 = f1_score(all_labels, all_preds, average='weighted')
+
+    return {
+        'accuracy': val_accuracy,
+        'precision': val_precision,
+        'recall': val_recall,
+        'f1_score': val_f1
+    }

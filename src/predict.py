@@ -1,9 +1,10 @@
 import torch
 from transformers import BertTokenizerFast
-from models.bert_model import BertModel
-from utils.evaluate_one_text import evaluate_one_text
 
-from config.labels import unique_labels, ids_to_labels
+from src.models.bert_model import BertModel
+from src.utils.evaluate_one_text import evaluate_one_text
+
+from src.config.labels import unique_labels, ids_to_labels
 
 # Load tokenizer
 print("Loading tokenizer...")

@@ -1,7 +1,12 @@
 import textwrap
 from tabulate import tabulate
 
-def print_training_config(languages, nrows, model, tokenizer, model_params):
+def print_training_config(training_data, model, tokenizer, model_params):
+
+    # Extract key training data details
+    lang_dist = training_data['lang'].value_counts()
+    languages = training_data['lang'].unique().tolist()
+    nrows = training_data.shape[0]
 
     # Extract key model configuration details
     model_info = {
@@ -25,8 +30,9 @@ def print_training_config(languages, nrows, model, tokenizer, model_params):
     # Prepare the data for tabulation
     headers = ["Configuration Item", "Details"]
     config_data = [
+        ["Language Distribution", "\n".join(f"{k}: {v}" for k, v in lang_dist.items())],
         ["Languages", "\n".join(textwrap.wrap(", ".join(languages), width=40))],
-        ["Number of Rows per Language", nrows],
+        ["Number of Total Rows", nrows],
         ["Model Info", "\n".join(f"{k}: {v}" for k, v in model_info.items())],
         ["Tokenizer Info", "\n".join(f"{k}: {v}" for k, v in tokenizer_info.items())],
         ["Model Parameters", "\n".join(f"{k}: {v}" for k, v in model_params.items())],

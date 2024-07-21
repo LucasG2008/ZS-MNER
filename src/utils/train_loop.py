@@ -1,12 +1,14 @@
 import torch
 from torch.optim import SGD, AdamW
 from torch.utils.data import DataLoader
-from data.data_sequence import DataSequence
 
 import sys
 import copy
+import datetime
 from time import time
 from tqdm import tqdm
+
+from src.data.data_sequence import DataSequence
 
 def train_loop(model, tokenizer, df_train, df_val, model_parameters):
 
@@ -73,14 +75,18 @@ def train_loop(model, tokenizer, df_train, df_val, model_parameters):
                 total_acc_train += acc
                 total_loss_train += loss.item()
 
-            train_acc_history.append((total_acc_train / ((idx+1) * BATCH_SIZE) ))
-            train_loss_history.append((total_loss_train / ((idx+1) * BATCH_SIZE) ))
-
             loss.backward()
             optimizer.step()
 
-            pbar.set_description(f"[Epoch: {epoch_num + 1}] [Acc: {(total_acc_train / ((idx + 1) * BATCH_SIZE)):.3f}]")
+            # Compute accuracy and loss
+            train_accuracy = total_acc_train / ((idx+1) * BATCH_SIZE)
+            train_loss = total_loss_train / ((idx+1) * BATCH_SIZE)
 
+            train_acc_history.append(train_accuracy)
+            train_loss_history.append(train_loss)
+
+            # Update progress bar
+            pbar.set_description(f"[Epoch: {epoch_num + 1}] [Acc: {train_accuracy:.3f}]")
             pbar.update(BATCH_SIZE)
 
         pbar.close()
@@ -111,11 +117,15 @@ def train_loop(model, tokenizer, df_train, df_val, model_parameters):
                     total_acc_val += acc
                     total_loss_val += loss.item()
     
-                val_acc_history.append((total_acc_val / ((idx+1) * BATCH_SIZE) ))
-                val_loss_history.append((total_loss_val / ((idx+1) * BATCH_SIZE) ))
+                # Compute accuracy and loss
+                current_val_accuracy = total_acc_val / ((idx+1) * BATCH_SIZE)
+                current_loss_val = total_loss_val / ((idx+1) * BATCH_SIZE)
 
-                pbar.set_description(f"[Validation Acc: {(total_acc_val / ((idx + 1) * BATCH_SIZE)):.3f}]")
+                val_acc_history.append(current_val_accuracy)
+                val_loss_history.append(current_loss_val)
 
+                # Update progress bar
+                pbar.set_description(f"[Validation Acc: {current_val_accuracy:.3f}]")
                 pbar.update(BATCH_SIZE)
 
         pbar.close()
@@ -143,9 +153,11 @@ def train_loop(model, tokenizer, df_train, df_val, model_parameters):
                 print('Early Stopping Triggered')
                 break
 
+    # Compute training time
     end_time = time()
     training_time = end_time - start_time
     
+    # Save and plot training and validation history metrics
     train_acc_history = [tensor.item() if isinstance(tensor, torch.Tensor) else tensor for tensor in train_acc_history]
     train_loss_history = [tensor.item() if isinstance(tensor, torch.Tensor) else tensor for tensor in train_loss_history]
 
@@ -153,7 +165,6 @@ def train_loop(model, tokenizer, df_train, df_val, model_parameters):
     val_loss_history = [tensor.item() if isinstance(tensor, torch.Tensor) else tensor for tensor in val_loss_history]
 
     plot_acc_loss(train_acc_history, val_acc_history, train_loss_history, val_loss_history)
-    plt.show()
 
     return model, best_model_weights, training_time
 
@@ -163,29 +174,24 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 def plot_acc_loss(train_acc_history, val_acc_history, train_loss_history, val_loss_history):
-  """
-  Plots the accuracy and loss history of the training process.
 
-  Parameters:
-    train_acc_history (list): List of training accuracy values
-    val_acc_history (list): List of validation accuracy values
-    train_loss_history (list): List of training loss values
-    val_loss_history (list): List of validation loss values
-  """
-  fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(8, 3))
+    fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(8, 3))
 
-  sns.lineplot(x=range(len(train_acc_history)), y=train_acc_history, ax=ax[0], label='Train Accuracy')
-  sns.lineplot(x=[len(train_acc_history)//len(val_acc_history)*i for i in range(len(val_acc_history))], 
-               y=val_acc_history, 
-               ax=ax[0], 
-               label='Validation Accuracy')
-  
-  ax[0].set_title('Accuracy History')
+    sns.lineplot(x=range(len(train_acc_history)), y=train_acc_history, ax=ax[0], label='Train Accuracy')
+    sns.lineplot(x=[len(train_acc_history)//len(val_acc_history)*i for i in range(len(val_acc_history))], 
+                y=val_acc_history, 
+                ax=ax[0], 
+                label='Validation Accuracy')
+    
+    ax[0].set_title('Accuracy History')
 
-  sns.lineplot(x=range(len(train_loss_history)), y=train_loss_history, ax=ax[1], label='Train Loss')
-  sns.lineplot(x=[len(train_loss_history)//len(val_loss_history)*i for i in range(len(val_loss_history))], 
-               y=val_loss_history, 
-               ax=ax[1], 
-               label='Validation Loss')
-  
-  ax[1].set_title('Loss History')
+    sns.lineplot(x=range(len(train_loss_history)), y=train_loss_history, ax=ax[1], label='Train Loss')
+    sns.lineplot(x=[len(train_loss_history)//len(val_loss_history)*i for i in range(len(val_loss_history))], 
+                y=val_loss_history, 
+                ax=ax[1], 
+                label='Validation Loss')
+    
+    ax[1].set_title('Loss History')
+
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    plt.savefig(f'outputs/plots/training_history_{timestamp}.png')
