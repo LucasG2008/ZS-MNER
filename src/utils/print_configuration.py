@@ -1,12 +1,17 @@
 import textwrap
 from tabulate import tabulate
 
-def print_training_config(training_data, model, tokenizer, model_params):
+def print_training_config(training_data, validation_data, test_data, model, tokenizer, model_params):
 
-    # Extract key training data details
+    # Extract key data details
     lang_dist = training_data['lang'].value_counts()
     languages = training_data['lang'].unique().tolist()
-    nrows = training_data.shape[0]
+
+    train_nrows = training_data.shape[0]
+    val_nrows = validation_data.shape[0]
+    test_nrows = test_data.shape[0]
+
+    nrows = train_nrows + val_nrows + test_nrows
 
     # Extract key model configuration details
     model_info = {
@@ -33,6 +38,7 @@ def print_training_config(training_data, model, tokenizer, model_params):
         ["Language Distribution", "\n".join(f"{k}: {v}" for k, v in lang_dist.items())],
         ["Languages", "\n".join(textwrap.wrap(", ".join(languages), width=40))],
         ["Number of Total Rows", nrows],
+        ["Train / Validation / Test Split", f"{train_nrows/nrows:.3f} / {val_nrows/nrows:.3f} / {test_nrows/nrows:.3f}"],
         ["Model Info", "\n".join(f"{k}: {v}" for k, v in model_info.items())],
         ["Tokenizer Info", "\n".join(f"{k}: {v}" for k, v in tokenizer_info.items())],
         ["Model Parameters", "\n".join(f"{k}: {v}" for k, v in model_params.items())],

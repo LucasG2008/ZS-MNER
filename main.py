@@ -5,8 +5,8 @@ from src.data.panx_loader import PANX_dataloader
 
 def main():
 
-    languages = ["en", "es"]
-    nrows = 100
+    languages = ["en", "es", "zh"]
+    nrows = 200
 
     # -------------- Load data --------------
     print("Loading data...")
@@ -21,10 +21,9 @@ def main():
         }
     model_path = 'src/models/pretrained/test_model.pth'
 
-    train_model(df_train, df_val, model_params, model_path)
+    train_model(df_train, df_val, df_test, model_params, model_path)
 
     # -------------- Evaluation --------------
-    # Evaluate the model
     evaluation_metrics = evaluate_model(model_path, df_test)
     print("Evaluation results:\n", evaluation_metrics)
 

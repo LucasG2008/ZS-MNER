@@ -22,6 +22,9 @@ def evaluate_loop(model, tokenizer, df_test):
     all_preds = []
     all_labels = []
 
+    total_correct_test = 0
+    total_samples_test = 0
+
     pbar = tqdm(total=len(df_test), desc=f"[Test Accuracy: {0}]")
     
     for idx, batch_data in enumerate(test_dataloader):
@@ -33,17 +36,20 @@ def evaluate_loop(model, tokenizer, df_test):
 
         loss, logits = model(input_id, mask, test_label)
 
-        for i in range(logits.shape[0]):
-            logits_clean = logits[i][test_label[i] != -100]
-            label_clean = test_label[i][test_label[i] != -100]
+        # Extract labels and predictions from logits
+        logits_clean = logits[test_label != -100]
+        label_clean = test_label[test_label != -100]
 
-            predictions = logits_clean.argmax(dim=1)
+        predictions = logits_clean.argmax(dim=1)
 
-            all_preds.extend(predictions.cpu().numpy())
-            all_labels.extend(label_clean.cpu().numpy())
+        all_preds.extend(predictions.cpu().numpy())
+        all_labels.extend(label_clean.cpu().numpy())
+
+        total_correct_test += (predictions == label_clean).sum().item()
+        total_samples_test += label_clean.size(0)
 
         # Calculate batch accuracy for display in the progress bar
-        acc = (predictions == label_clean).float().mean().item()
+        acc = total_correct_test / total_samples_test
         pbar.set_description(f"[Test Accuracy: {acc:.3f}]")
         pbar.update(1)
 

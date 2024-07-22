@@ -9,7 +9,7 @@ from src.utils.train_loop import train_loop
 from src.config.labels import unique_labels
 from src.utils.print_configuration import print_training_config
 
-def train_model(training_data, validation_data, model_params, model_path):
+def train_model(training_data, validation_data, test_data, model_params, model_path):
 
     # Load tokenizer
     print("\nLoading tokenizer...")
@@ -19,7 +19,7 @@ def train_model(training_data, validation_data, model_params, model_path):
     model = BertModel(len(unique_labels))
 
     # Print training configuration
-    print_training_config(training_data, model.bert, tokenizer, model_params)
+    print_training_config(training_data, validation_data, test_data, model.bert, tokenizer, model_params)
 
     # Train model
     print("\nTraining...")

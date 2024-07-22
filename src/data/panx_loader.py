@@ -65,12 +65,21 @@ class PANX_dataloader:
             pbar.update(1)
 
         multilingual_df = pd.concat(lang_dataframes)
+        print('Concatenated all data together')
         
         return multilingual_df
     
-    def load_training_data(self):
+    def load_training_data(self, train_ratio=0.8, val_ratio=0.1, test_ratio=0.1):
         multilingual_df = self.load_data()
-        df_train, df_val, df_test = np.split(multilingual_df.sample(frac=1, random_state=42), 
-                                            [int(0.8*len(multilingual_df)), 
-                                            int(0.9*len(multilingual_df))])
+        multilingual_df = multilingual_df.sample(frac=1, random_state=42)
+
+        # Calculate the indices for splitting
+        total_len = len(multilingual_df)
+        train_end = int(train_ratio * total_len)
+        val_end = train_end + int(val_ratio * total_len)
+
+        # Perform the split
+        df_train, df_val, df_test = np.split(multilingual_df, [train_end, val_end])
+        print("Split data into train, val, and test sets")
+
         return df_train, df_val, df_test

@@ -49,7 +49,9 @@ def train_loop(model, tokenizer, df_train, df_val, model_parameters):
     patience = 2
 
     for epoch_num in range(EPOCHS):
-        total_acc_train = 0
+
+        total_correct_train = 0
+        total_samples_train = 0
         total_loss_train = 0
 
         model.train()
@@ -65,22 +67,21 @@ def train_loop(model, tokenizer, df_train, df_val, model_parameters):
             optimizer.zero_grad()
             loss, logits = model(input_id, mask, train_label)
 
-            for i in range(logits.shape[0]):
+            # Extract labels and predictions from logits
+            logits_clean = logits[train_label != -100]
+            label_clean = train_label[train_label != -100]
 
-                logits_clean = logits[i][train_label[i] != -100]
-                label_clean = train_label[i][train_label[i] != -100]
-
-                predictions = logits_clean.argmax(dim=1)
-                acc = (predictions == label_clean).float().mean()
-                total_acc_train += acc
-                total_loss_train += loss.item()
+            predictions = logits_clean.argmax(dim=1)
+            total_correct_train += (predictions == label_clean).sum().item()
+            total_samples_train += label_clean.size(0)
+            total_loss_train += loss.item()
 
             loss.backward()
             optimizer.step()
 
-            # Compute accuracy and loss
-            train_accuracy = total_acc_train / ((idx+1) * BATCH_SIZE)
-            train_loss = total_loss_train / ((idx+1) * BATCH_SIZE)
+            # Calculate training accuracy and loss
+            train_accuracy = total_correct_train / total_samples_train
+            train_loss = total_loss_train / total_samples_train
 
             train_acc_history.append(train_accuracy)
             train_loss_history.append(train_loss)
@@ -94,7 +95,8 @@ def train_loop(model, tokenizer, df_train, df_val, model_parameters):
 
         model.eval()
 
-        total_acc_val = 0
+        total_correct_val = 0
+        total_samples_val = 0
         total_loss_val = 0
 
         with torch.no_grad():
@@ -107,39 +109,42 @@ def train_loop(model, tokenizer, df_train, df_val, model_parameters):
                 input_id = val_data['input_ids'].squeeze(1).to(device)
     
                 loss, logits = model(input_id, mask, val_label)
-    
-                for i in range(logits.shape[0]):
-                    logits_clean = logits[i][val_label[i] != -100]
-                    label_clean = val_label[i][val_label[i] != -100]
-    
-                    predictions = logits_clean.argmax(dim=1)
-                    acc = (predictions == label_clean).float().mean()
-                    total_acc_val += acc
-                    total_loss_val += loss.item()
-    
-                # Compute accuracy and loss
-                current_val_accuracy = total_acc_val / ((idx+1) * BATCH_SIZE)
-                current_loss_val = total_loss_val / ((idx+1) * BATCH_SIZE)
 
-                val_acc_history.append(current_val_accuracy)
-                val_loss_history.append(current_loss_val)
+                # Extract labels and predictions from logits
+                logits_clean = logits[val_label != -100]
+                label_clean = val_label[val_label != -100]
+
+                predictions = logits_clean.argmax(dim=1)
+                total_correct_val += (predictions == label_clean).sum().item()
+                total_samples_val += label_clean.size(0)
+                total_loss_val += loss.item()
+
+                # Calculate validation accuracy and loss
+                val_accuracy = total_correct_val / total_samples_val
+                val_loss = total_loss_val / total_samples_val
+
+                val_acc_history.append(val_accuracy)
+                val_loss_history.append(val_loss)
 
                 # Update progress bar
-                pbar.set_description(f"[Validation Acc: {current_val_accuracy:.3f}]")
+                pbar.set_description(f"[Validation Acc: {val_accuracy:.3f}]")
                 pbar.update(BATCH_SIZE)
 
         pbar.close()
         sys.stdout.flush()
 
-        val_accuracy = total_acc_val / len(df_val)
-        val_loss = total_loss_val / len(df_val)
+        # Calculate training and validation metrics
+        train_accuracy = total_correct_train / total_samples_train
+        train_loss = total_loss_train / total_samples_train
+        val_accuracy = total_correct_val / total_samples_val
+        val_loss = total_loss_val / total_samples_val
 
         tqdm.write(
             f'Epochs: {epoch_num+1} \
-            | Loss: {total_loss_train / len(df_train): .3f} \
-            | Accuracy: {total_acc_train / len(df_train): .3f} \
+            | Loss: {train_loss: .3f} \
+            | Accuracy: {train_accuracy: .3f} \
             | Val Loss: {val_loss: .3f} \
-            | Val Accuracy: {val_accuracy: .3f}' \
+            | Val Accuracy: {val_accuracy: .3f}'
         )
 
         # Early stopping
