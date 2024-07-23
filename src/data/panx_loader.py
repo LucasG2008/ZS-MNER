@@ -42,7 +42,7 @@ class PANX_dataloader:
         dataset = dataset.map(combine_text_tokens)
         return dataset
     
-    def load_data(self) -> pd.DataFrame:
+    def load_data(self, lang_dist=None) -> pd.DataFrame:
         panx_ch = self.get_multilingual_dataset(self.langs)
         lang_dataframes = []
 
@@ -57,10 +57,15 @@ class PANX_dataloader:
             complete_lang_df = pd.concat([train_df, val_df, test_df], ignore_index=True)
             complete_lang_df['lang'] = lang
 
-            if self.nrows > len(complete_lang_df):
-                lang_dataframes.append(complete_lang_df)
+            if lang_dist is None:
+
+                if self.nrows > len(complete_lang_df):
+                    lang_dataframes.append(complete_lang_df)
+                else:
+                    lang_dataframes.append(complete_lang_df.sample(n=self.nrows, random_state=42))
+
             else:
-                lang_dataframes.append(complete_lang_df.sample(n=self.nrows, random_state=42))
+                lang_dataframes.append(complete_lang_df.sample(n=lang_dist[lang], random_state=42))
 
             pbar.update(1)
 
